@@ -1,0 +1,23 @@
+{
+  "name": "tsdns",
+  "version": "0.0.1",
+  "description": "node.js tsdns server",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "tsdns"
+  ],
+  "author": "nathan.rodram@gmail.com",
+  "license": "GPL2",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "express": "3.*",
+    "sqlite3": "*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nathanrod/nodejs-tsdns.git"
+  }
+}

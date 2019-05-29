@@ -1,0 +1,7 @@
+{
+    "api_key": "abcdefg",
+    "api_ip": "0.0.0.0",
+    "api_port": "3000",
+    "tsdns_ip": "0.0.0.0",
+    "tsdns_port": "41144"
+}
