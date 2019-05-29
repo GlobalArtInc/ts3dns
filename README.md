@@ -1,31 +1,24 @@
 # nodejs-tsdns
-Node.js tsdns server with restful api
+Node.js TSDNS server с RestFul API
 
-# Api usage
+# Использование
 
-All request requires a header:
+Все запросы, выполняются через GET
 
-authorization : YOUR_TSDNS_API_KEY
+**Список DNS зон**
 
-**List DNS zones**
+Url: Домен:3000/list?api_key=...
 
-Url: YOUR_TSDNS_SERVER_DOMAIN:3000/list
 
-METHOD: GET 
+**Добавить DNS зону**
 
-**Add DNS zone**
+Url: Домен:3000/add?api_key=...&zone=...&target=...
 
-Url: YOUR_TSDNS_SERVER_DOMAIN:3000/add/DNS_ZONE/TARGET
 
-METHOD: GET 
+**Получить DNS зону**
 
-**GET DNS zone**
-
-Url: YOUR_TSDNS_SERVER_DOMAIN:3000/get/DNS_ZONE
-METHOD: GET 
+Url: Домен:3000/get?api_key=...&zone=...
 
 **Delete DNS zone**
 
-Url: YOUR_TSDNS_SERVER_DOMAIN:3000/del/DNS_ZONE
-
-METHOD: GET 
+Url: Домен:3000/del?api_key=...&zone=...
