@@ -23,6 +23,39 @@ app.get('/list', function (req, res) {
 
 });
 
+app.get('/update', function(req, res){
+  if( req.query.api_key == config.api_key ){
+    res.statusCode = 200
+    var id = req.query.id;
+    var zone = req.query.zone;
+    var target = req.query.target;
+    
+    if(!id) {
+      res.end('{result:"error", "message":"id_is_empty"}')
+    }
+    else if(!zone){
+      res.end('{"result":"zone_empty"}')
+    }
+    else if(!target){
+      res.end('{"result":"target_empty"}')
+    }
+    else{
+      db.all("SELECT * FROM zones WHERE id=?", id, function(err, row){
+        if(row[0]){
+          var sql = 'UPDATE zones SET zone = ?, target = ? WHERE id = ?';
+          var stmt = db.prepare(sql,zone,target,id);
+          stmt.run();
+          stmt.finalize();
+          res.end('{"result":"success"}');
+        }else{
+          res.end({"result":"recond_not_found"})
+        }
+      
+      });
+    }
+  }
+});
+
 app.get('/add', function (req, res) {
   if( req.query.api_key == config.api_key ){
     var zone = req.query.zone;
@@ -60,22 +93,39 @@ app.get('/add', function (req, res) {
 
 app.get('/del', function (req, res) {
   if( req.query.api_key == config.api_key ){
+    var id = req.query.id;
     var zone = req.query.zone;
-    db.all("SELECT * FROM zones WHERE zone=?", zone, function(err, row){
-      if(!row[0]) {
-        res.statusCode = 200;
-        res.end('{"result":"error", "message":"zone_not_found"}');
-        console.log("Zone "+zone + " not found")
-      }else{
-       var sql = "DELETE FROM zones WHERE zone =?";
-       var stmt = db.prepare(sql,zone);
-       stmt.run();
-       stmt.finalize();
-       res.statusCode = 200;
-       res.end('{"result":"success"}');
-       console.log("Zone "+zone + " deleted")
-      }
-    })
+    if(id){
+      db.all("SELECT * FROM zones WHERE id=?", id, function(err, row){
+        if(!row[0]) {
+          res.statusCode = 200;
+          res.end('{"result":"error", "message":"zone_not_found"}');
+        }else{
+         var sql = "DELETE FROM zones WHERE id =?";
+         var stmt = db.prepare(sql,id);
+         stmt.run();
+         stmt.finalize();
+         res.statusCode = 200;
+         res.end('{"result":"success"}');
+        }
+      })
+    }else{
+      db.all("SELECT * FROM zones WHERE zone=?", zone, function(err, row){
+        if(!row[0]) {
+          res.statusCode = 200;
+          res.end('{"result":"error", "message":"zone_not_found"}');
+          console.log("Zone "+zone + " not found")
+        }else{
+         var sql = "DELETE FROM zones WHERE zone =?";
+         var stmt = db.prepare(sql,zone);
+         stmt.run();
+         stmt.finalize();
+         res.statusCode = 200;
+         res.end('{"result":"success"}');
+         console.log("Zone "+zone + " deleted")
+        }
+      })
+    }
   
   }else{
     res.statusCode = 200;
@@ -86,10 +136,19 @@ app.get('/del', function (req, res) {
 app.get('/get', function (req, res) {
   if( req.query.api_key == config.api_key ){
     var zone = req.query.zone;
-    db.all("SELECT * FROM zones WHERE zone=?",zone, function(err, row) {
-      res.statusCode = 200;
-      res.end('{"result":"success","message":' + JSON.stringify( row ) + '}');
-    });
+    var id = req.query.id;
+
+    if(id){
+      db.all("SELECT * FROM zones WHERE id=?",id, function(err, row) {
+        res.statusCode = 200;
+        res.end('{"result":"success","message":' + JSON.stringify( row ) + '}');
+      });
+    }else{
+      db.all("SELECT * FROM zones WHERE zone=?",zone, function(err, row) {
+        res.statusCode = 200;
+        res.end('{"result":"success","message":' + JSON.stringify( row ) + '}');
+      });
+    }
   }else{
     res.statusCode = 200;
     res.end('{"result":"error","message":"invalid_token"}');

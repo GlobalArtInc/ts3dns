@@ -17,27 +17,44 @@ var tsdns = net.createServer(function (socket) {
         }, 60000);
         socket.on('data', function(data) {
             var domain = data.toString().replace(/\r|\n/g, '');
-            var ds = domain.split('.');
-            //var str = "test.example.com";
-            //var pat = "*.example.com";
-            //
-            //pat = '^'+pat.replace(/\./g, '\\.').replace(/\*/g,'.*')+'$';
-            //console.log(!!str.match(pat)); 
+            var ds = [];
+            ds = domain.split('.');
+            ds.unshift(domain);
+            var success = false;
+
             for(var i=0,len=ds.length; i<len;i++){
-                console.log(ds[i]);
-                db.all("SELECT * FROM zones WHERE zone=?",domain, function(err, rows){
-                    if( err ){
-                        console.log(err);
-                    }else{
-                        if( rows.length ){
-                           writeEnd(rows[0].target);
+                if(i == 0){
+                    db.all("SELECT * FROM zones WHERE zone=?",ds[0], function(err, rows){
+                        if( err ){
+                            console.log(err);
                         }else{
-                           writeEnd('404');
-                        }
-                   }
-                });
-          }
-           
+                            if( rows.length ){
+                                return writeEnd(rows[0].target)                            
+                            }
+                       }
+                    });
+                    ds.shift();
+                }
+                else if(success){
+                    return writeEnd('404')
+                }
+                else{
+                        var i_d = ds;
+                        i_d[i - 1] = i_d[i - 1].replace(i_d[i - 1], "*");
+                        domain = i_d.join(".");
+                        
+                        db.all("SELECT * FROM zones WHERE zone=?",domain, function(err, rows){
+                            if( err ){
+                                console.log(err);
+                            }else{
+                                if( rows[0] != undefined){
+                                    success = true;
+                                    return writeEnd(rows[0].target);
+                                }
+                           }
+                        });
+                }
+          }    
         });
         
         
