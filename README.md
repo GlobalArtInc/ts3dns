@@ -1,6 +1,13 @@
 ## nodejs-tsdns
 Node.js TSDNS server с RestFull API
 
+## Установка
+```shell
+$ apt install nodejs screen
+$ screen -AmdS tsdnsserver node server.js
+```
+По-умолчанию, API-сервер будет работать на порту 3000
+
 ## Авторизация
 Для авторизации, нужно добавить заголовок<br />
 > **Authorization: токен** <br />
