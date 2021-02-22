@@ -5,158 +5,108 @@ var express = require('express');
 var app = express();
 var config = require('./config.json');
 
-db.serialize(function() {
-  db.run("CREATE TABLE IF NOT EXISTS zones (id integer primary key, zone varchar(100),target varchar(50))");
+db.serialize(function () {
+    db.run("CREATE TABLE IF NOT EXISTS zones (id integer primary key, zone varchar(100),target varchar(50))");
 });
 
-app.get('/list', function (req, res) {
-  
-  if( req.query.api_key == config.api_key ){
-    var zone = req.params.zone;
-    db.all("SELECT * FROM zones", function(err, rows) {
-      res.end('{"result":"success","message":' + JSON.stringify( rows ) + '}');
-    });
-  }else{
-    res.statusCode = 200;
-    res.end('{"result":"error","message":"invalid_token"}');
-  }
+app.get('/', function (req, res) {
+    if (req.headers.authorization === config.api_key) {
+        db.all("SELECT * FROM zones", function (err, rows) {
+            return res.send({response: true, data: rows})
+        });
+    } else {
+        return res.status(401).send({response: false, message: "invalid_token"});
+    }
 
 });
 
-app.get('/update', function(req, res){
-  if( req.query.api_key == config.api_key ){
-    res.statusCode = 200
-    var id = req.query.id;
-    var zone = req.query.zone;
-    var target = req.query.target;
-    
-    if(!id) {
-      res.end('{result:"error", "message":"id_is_empty"}')
+app.post('/', (req, res) => {
+    if (req.headers.authorization === config.api_key) {
+        const zone = req.headers.zone, target = req.headers.target;
+
+        db.all("SELECT * FROM zones WHERE zone=?", zone, function (err, row) {
+            if (row.length > 0) {
+                return res.status(403).send({response: false, message: 'zone_used'})
+            } else {
+                if (!zone) {
+                    return res.status(400).send({response: false, message: 'zone_is_empty'})
+                } else if (!target) {
+                    return res.status(400).send({response: false, message: 'target_is_empty'})
+                } else {
+                    const stmt = db.prepare("INSERT INTO zones(zone,target) VALUES(?, ?)", zone, target);
+                    stmt.run();
+                    stmt.finalize();
+                    return res.send({response: true})
+                }
+            }
+        })
+
+    } else {
+        return res.status(401).send({response: false, message: 'incorrect_token'});
     }
-    else if(!zone){
-      res.end('{"result":"zone_empty"}')
-    }
-    else if(!target){
-      res.end('{"result":"target_empty"}')
-    }
-    else{
-      db.all("SELECT * FROM zones WHERE id=?", id, function(err, row){
-        if(row[0]){
-          var sql = 'UPDATE zones SET zone = ?, target = ? WHERE id = ?';
-          var stmt = db.prepare(sql,zone,target,id);
-          stmt.run();
-          stmt.finalize();
-          res.end('{"result":"success"}');
-        }else{
-          res.end({"result":"recond_not_found"})
+})
+
+app.get('/:id', function (req, res) {
+    if (req.headers.authorization === config.api_key) {
+        const id = req.params.id;
+
+        if (id) {
+            db.all("SELECT * FROM zones WHERE id=?", id, function (err, row) {
+                if (row.length > 0) {
+                    return res.send({response: true, data: row[0]})
+                } else {
+                    return res.status(404).send({response: false, message: 'not_found'})
+                }
+            });
         }
-      
-      });
+    } else {
+        return res.status(401).send({response: false, message: 'incorrect_token'});
     }
-  }
 });
 
-app.get('/add', function (req, res) {
-  if( req.query.api_key == config.api_key ){
-    var zone = req.query.zone;
-    var target = req.query.target;
-    
-    db.all("SELECT * FROM zones WHERE zone=?", zone, function(err, row){
-      if(row[0]) {
-        res.statusCode = 200
-        res.end('{"result":"error", "message":"zone_used"}');
-        console.log("Zone "+zone + " used")
-      }else{
-        if(!zone) {
-          res.statusCode = 200
-          res.end('{result:"error", "message":"zone_is_empty"}')
-        }else if(!target){
-          res.statusCode = 200
-          res.end('{result:"error", "message":"target_is_empty"}')
-        }else{
-          res.statusCode = 200
-          var sql = 'INSERT INTO zones(zone,target) VALUES(?, ?)';
-          var stmt = db.prepare(sql,zone,target);
-          stmt.run();
-          stmt.finalize();
-          res.end('{"result":"success"}');
-          console.log("Zone "+zone + " created")
-        }
-      }
-    })
+app.put('/:id', function (req, res) {
+    if (req.headers.authorization === config.api_key) {
+        const id = req.params.id, zone = req.headers.zone, target = req.headers.target;
+        db.all("SELECT * FROM zones WHERE id=?", id, function (err, row) {
+            if (row[0]) {
+                if (!zone) return res.send({response: false, message: 'zone_empty'})
+                if (!target) return res.send({response: false, message: 'target_empty'})
 
-  }else{
-    res.statusCode = 200;
-    res.end('{"result":"error","message":"invalid_token"}');
-  }
-});
+                const sql = 'UPDATE zones SET zone = ?, target = ? WHERE id = ?';
+                const stmt = db.prepare(sql, zone, target, id);
+                stmt.run();
+                stmt.finalize();
+                return res.send({response: true})
+            } else {
+                return res.send({response: false, message: 'not_found'})
+            }
 
-app.get('/del', function (req, res) {
-  if( req.query.api_key == config.api_key ){
-    var id = req.query.id;
-    var zone = req.query.zone;
-    if(id){
-      db.all("SELECT * FROM zones WHERE id=?", id, function(err, row){
-        if(!row[0]) {
-          res.statusCode = 200;
-          res.end('{"result":"error", "message":"zone_not_found"}');
-        }else{
-         var sql = "DELETE FROM zones WHERE id =?";
-         var stmt = db.prepare(sql,id);
-         stmt.run();
-         stmt.finalize();
-         res.statusCode = 200;
-         res.end('{"result":"success"}');
-        }
-      })
-    }else{
-      db.all("SELECT * FROM zones WHERE zone=?", zone, function(err, row){
-        if(!row[0]) {
-          res.statusCode = 200;
-          res.end('{"result":"error", "message":"zone_not_found"}');
-          console.log("Zone "+zone + " not found")
-        }else{
-         var sql = "DELETE FROM zones WHERE zone =?";
-         var stmt = db.prepare(sql,zone);
-         stmt.run();
-         stmt.finalize();
-         res.statusCode = 200;
-         res.end('{"result":"success"}');
-         console.log("Zone "+zone + " deleted")
-        }
-      })
+        });
+    } else {
+        return res.status(401).send({response: false, message: 'incorrect_token'});
     }
-  
-  }else{
-    res.statusCode = 200;
-    res.end('{"result":"error","message":"invalid_token"}');
-  }
 });
 
-app.get('/get', function (req, res) {
-  if( req.query.api_key == config.api_key ){
-    var zone = req.query.zone;
-    var id = req.query.id;
-
-    if(id){
-      db.all("SELECT * FROM zones WHERE id=?",id, function(err, row) {
-        res.statusCode = 200;
-        res.end('{"result":"success","message":' + JSON.stringify( row ) + '}');
-      });
-    }else{
-      db.all("SELECT * FROM zones WHERE zone=?",zone, function(err, row) {
-        res.statusCode = 200;
-        res.end('{"result":"success","message":' + JSON.stringify( row ) + '}');
-      });
+app.delete('/:id', (req, res) => {
+    if (req.headers.authorization === config.api_key) {
+        const id = req.params.id
+        db.all("SELECT * FROM zones WHERE id=?", id, function (err, row) {
+            if (row.length > 0) {
+                const stmt = db.prepare("DELETE FROM zones WHERE id = ?", id);
+                stmt.run();
+                stmt.finalize();
+                return res.send({response: true})
+            } else {
+                return res.status(404).send({response: false, message: 'not_found'})
+            }
+        })
+    } else {
+        return res.status(401).send({response: false, message: 'incorrect_token'});
     }
-  }else{
-    res.statusCode = 200;
-    res.end('{"result":"error","message":"invalid_token"}');
-  }
-});
+})
 
-app.get('*', function(req, res){
-  res.end('{"result":"error","message":"action_undefined"}')
+app.get('*', function (req, res) {
+    return res.send({response: false})
 })
 
 module.exports = app;
