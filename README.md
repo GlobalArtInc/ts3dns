@@ -4,6 +4,8 @@ Node.js TSDNS server с RestFull API
 ## Установка
 ```shell
 $ git clone https://github.com/GlobalArtLimited/ts3dns.git
+$ cd ts3dns
+$ yarn or npm i
 $ apt install nodejs screen
 $ screen -AmdS tsdnsserver node server.js
 ```
