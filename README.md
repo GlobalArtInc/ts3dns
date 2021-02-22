@@ -11,7 +11,7 @@ $ screen -AmdS tsdnsserver node server.js
 
 ## Авторизация
 Для авторизации, нужно добавить заголовок<br />
-> **Authorization: токен** <br />
+> **Authorization: токен** (по-умолчанию: abcdefg) <br />
 Токен хранится в конфигурационном файле config.json
 
 # Использование
